@@ -15,7 +15,7 @@ TagManager:
   - UI
   - Terrain
   - Units
-  - 
+  - Highlight
   - 
   - 
   - 
@@ -48,4 +48,7 @@ TagManager:
     locked: 0
   - name: Units
     uniqueID: 486433111
+    locked: 0
+  - name: Highlight
+    uniqueID: 1959131487
     locked: 0

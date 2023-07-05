@@ -8,14 +8,20 @@ using System.Linq;
 public class CheckersBoardInitializer : MonoBehaviour
 {
     //Declarations
+    [Header("Board Settings")]
     [SerializeField] private int _columns = 8;
     [SerializeField] private int _rows = 8;
+
+    [Header("Prefab Setup")]
     [SerializeField] private GamePiece _lightTerrainPiece;
     [SerializeField] private GamePiece _darkTerrainPiece;
     [SerializeField] private GamePiece _lightPlayPiece;
     [SerializeField] private GamePiece _darkPlayPiece;
+
+    [Header("Storage Containers")]
     [SerializeField] private GameObject _terrainPieceContainer;
-    [SerializeField] private GameObject _playPieceContainer;
+    [SerializeField] private GameObject _darkPieceContainer;
+    [SerializeField] private GameObject _lightPieceContainer;
     [SerializeField] private GameObject _darkOutOfPlayLocation;
     [SerializeField] private GameObject _lightOutOfPlayLocation;
     
@@ -110,24 +116,24 @@ public class CheckersBoardInitializer : MonoBehaviour
 
     private GamePiece CreateDarkTerrainPiece()
     {
-        return Instantiate(_darkTerrainPiece.gameObject, _terrainPieceContainer.transform).GetComponent<GamePiece>();
+        return Instantiate(_darkTerrainPiece.gameObject, transform.position, Quaternion.identity, _terrainPieceContainer.transform).GetComponent<GamePiece>();
     }
 
     private GamePiece CreateLightTerrainPiece()
     {
-        return Instantiate(_lightTerrainPiece.gameObject, _terrainPieceContainer.transform).GetComponent<GamePiece>();
+        return Instantiate(_lightTerrainPiece.gameObject, transform.position, Quaternion.identity, _terrainPieceContainer.transform).GetComponent<GamePiece>();
     }
 
     private GamePiece CreateDarkPlayPiece()
     {
-        GamePiece darkPiece = Instantiate(_darkPlayPiece.gameObject, _playPieceContainer.transform).GetComponent<GamePiece>();
+        GamePiece darkPiece = Instantiate(_darkPlayPiece.gameObject, transform.position, Quaternion.identity, _darkPieceContainer.transform).GetComponent<GamePiece>();
         darkPiece.SetOutOfPlayHoldingLocation(_darkOutOfPlayLocation.transform);
         return darkPiece;
     }
 
     private GamePiece CreateLightPlayPiece()
     {
-        GamePiece lightPiece = Instantiate(_lightPlayPiece.gameObject, _playPieceContainer.transform).GetComponent<GamePiece>();
+        GamePiece lightPiece = Instantiate(_lightPlayPiece.gameObject, transform.position, Quaternion.identity, _lightPieceContainer.transform).GetComponent<GamePiece>();
         lightPiece.SetOutOfPlayHoldingLocation(_lightOutOfPlayLocation.transform);
         return lightPiece;
     }

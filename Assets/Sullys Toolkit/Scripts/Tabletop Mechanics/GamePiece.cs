@@ -102,7 +102,7 @@ namespace SullysToolkit.TableTop
 
         public void SetGridPosition((int,int) newPosition)
         {
-            if (_gameBoard.GetGrid().IsCellInGrid(newPosition.Item1, newPosition.Item2))
+            if (_gameBoard.GetGrid().IsCellInGrid(newPosition.Item1, newPosition.Item2) && !_gameBoard.IsPositionOccupied(newPosition, _boardLayer))
             {
                 _currentGridPosition = newPosition;
                 MoveToPositionOnBoard(newPosition);

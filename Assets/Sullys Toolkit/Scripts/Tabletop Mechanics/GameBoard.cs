@@ -180,6 +180,30 @@ namespace SullysToolkit.TableTop
             
         }
 
+        public GamePiece GetPieceOnPosition((int,int) xyPosition, GameBoardLayer layer)
+        {
+            if (_isBoardInitialized)
+            {
+                LogStatement($"Fetching gamePieces on position {xyPosition.Item1},{xyPosition.Item2} in layer {layer}...");
+                List<GamePiece> querydPieces =
+                    (from gamePiece in _gamePiecesInPlay
+                     where gamePiece.GetGridPosition() == xyPosition && gamePiece.GetBoardLayer() == layer
+                     select gamePiece).ToList();
+
+                LogStatement($"GamePiece at position {xyPosition.Item1},{xyPosition.Item2} found: {querydPieces.Count}");
+                if (querydPieces.Count > 0)
+                    return querydPieces.First();
+
+                else return null;
+            }
+
+            else
+            {
+                STKDebugLogger.LogWarning("Board isn't initialized. Returning null value");
+                return null;
+            }
+        }
+
         public void AddGamePiece(GamePiece newGamePiece, GameBoardLayer deseiredLayer, (int, int) xyDesiredPosition)
         {
             if (_isBoardInitialized)
@@ -192,7 +216,7 @@ namespace SullysToolkit.TableTop
                 if (!_doesPieceAlreadyExistOnBoard && !_isPositionAlreadyOccupiedOnLayer && _doesPositionExistOnBoard)
                 {
                     LogStatement($"Attempting to Add {newGamePiece.gameObject.name} to gameBoard...");
-                    SetGamePieceAsChild(newGamePiece);
+                    //SetGamePieceAsChild(newGamePiece);
                     newGamePiece.SetGameBoard(this);
                     newGamePiece.SetBoardLayer(deseiredLayer);
                     newGamePiece.MoveIntoPlay(xyDesiredPosition);
