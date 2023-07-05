@@ -95,8 +95,11 @@ public class UnitController : MonoBehaviour, ITurnListener
                 //Have we made a selection, yet?
                 if (_selectedCheckersUnit == null && _gameBoardRef.IsPositionOccupied(selectedPosition, GameBoardLayer.Units))
                 {
-                    //Save selection if we selected our own piece
-                    if (_gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units).CompareTag(_team.ToString()))
+                    
+                    GamePiece possibleSelection = _gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units);
+
+                    //Save selection if we selected our own piece THAT HAS MOVES AVAILABLE
+                    if (possibleSelection.CompareTag(_team.ToString()) && CanPieceMove(possibleSelection.GetComponent<CheckersUnitAttributes>()))
                     {
                         _selectedCheckersUnit = _gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units).GetComponent<CheckersUnitAttributes>();
 
@@ -186,7 +189,7 @@ public class UnitController : MonoBehaviour, ITurnListener
         List<(int, int)> relativeMovementPositions = unit.GetLegalMoveDirectionsList();
 
         //Convert each move direction of the unit into world cells
-        //Add them to the return list if the position exists on the board
+        //Add the new world cell to the return list only if BOTH 1) the position exists on the board AND 2) the position is currently unoccupied 
         foreach((int,int) direction in relativeMovementPositions)
         {
             GamePiece unitGamePiece = unit.GetComponent<GamePiece>();
@@ -195,7 +198,7 @@ public class UnitController : MonoBehaviour, ITurnListener
             worldPosition.Item1 = unitGamePiece.GetGridPosition().Item1 + direction.Item1;
             worldPosition.Item2 = unitGamePiece.GetGridPosition().Item2 + direction.Item2;
 
-            if (_gameBoardRef.GetGrid().IsCellInGrid(worldPosition.Item1, worldPosition.Item2))
+            if (_gameBoardRef.GetGrid().IsCellInGrid(worldPosition.Item1, worldPosition.Item2) && !_gameBoardRef.IsPositionOccupied(worldPosition, GameBoardLayer.Units))
                 worldBoardPositions.Add(worldPosition);
         }
 
@@ -230,6 +233,13 @@ public class UnitController : MonoBehaviour, ITurnListener
     {
         _isSelectorReady = false;
         Invoke("ReadySelector", _selectionCooldown);
+    }
+
+    private bool CanPieceMove(CheckersUnitAttributes unit)
+    {
+        if (CalculateWorldMoveableBoardPositionsFromCheckersUnit(unit).Count == 0)
+            return false;
+        else return true;
     }
 
     //Getters, Setters, & Commands
