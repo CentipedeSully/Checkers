@@ -24,6 +24,8 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] [Min(.1f)] private float _selectionCooldown = .5f;
     [SerializeField] private bool _isSelectorReady = true;
     [SerializeField] private CheckersUnitAttributes _selectedCheckersUnit;
+    [SerializeField] private List<CheckersUnitAttributes> _unitsWithJumps;
+    [SerializeField] private List<CheckersUnitAttributes> _unitsWithMoves;
     [SerializeField] private List<CheckersUnitAttributes> _availableTeamUnits;
     [SerializeField] private GameObject _highlightGraphicPrefab;
     [SerializeField] private Transform _highlightContainer;
@@ -47,6 +49,8 @@ public class UnitController : MonoBehaviour, ITurnListener
         if (_currentHighlights.Count == 0)
             _currentHighlights = new List<GameObject>();
         _availableTeamUnits = new List<CheckersUnitAttributes>();
+        _unitsWithJumps = new List<CheckersUnitAttributes>();
+        _unitsWithMoves = new List<CheckersUnitAttributes>();
 
         DetermineUnlockPhase();
     }
@@ -61,8 +65,9 @@ public class UnitController : MonoBehaviour, ITurnListener
         if (_isDebugActive)
             ListenForDebugCommands();
 
-        if (_isControlsUnlocked)
+        if (_isControlsUnlocked && AreAnyMovesAvailable())
             ListenForSelection();
+            
     }
 
 
@@ -95,16 +100,15 @@ public class UnitController : MonoBehaviour, ITurnListener
 
             if (selectedPosition != (-1, -1))
             {
+                
                 //Have we made a selection, yet?
-                if (_selectedCheckersUnit == null && IsAllyOnPosition(selectedPosition) && CanPieceMove(selectedPosition))
+                if (_selectedCheckersUnit == null)
                 {
-                    _selectedCheckersUnit = _gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units).GetComponent<CheckersUnitAttributes>();
+                    if (AreAnyJumpsAvailable() && CanUnitJump(selectedPosition))
+                        CommitSelection(_gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units));
 
-                    //Show selection's possible moves
-                    HighlightPossibleMoves();
-
-                    //Cooldown Selector
-                    CooldownSelector();
+                    else if (AreAnyMovesAvailable() && CanPieceMove(selectedPosition))
+                        CommitSelection(_gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units));
                 }
 
                 else if (_selectedCheckersUnit != null)
@@ -164,6 +168,17 @@ public class UnitController : MonoBehaviour, ITurnListener
 
         else
             return (-1, -1);
+    }
+
+    private void CommitSelection(GamePiece piece)
+    {
+        _selectedCheckersUnit = piece.GetComponent<CheckersUnitAttributes>();
+
+        //Show selection's possible moves
+        HighlightPossibleMoves();
+
+        //Cooldown Selector
+        CooldownSelector();
     }
 
     private bool IsSelectedMoveValid((int,int) xyPosition)
@@ -244,26 +259,18 @@ public class UnitController : MonoBehaviour, ITurnListener
 
     private bool CanPieceMove(CheckersUnitAttributes unit)
     {
-        if (CalculateWorldMoveableBoardPositionsFromCheckersUnit(unit).Count == 0)
-            return false;
-        else return true;
+        return _unitsWithMoves.Contains(unit);
     }
 
     private bool CanPieceMove(GamePiece piece)
     {
-        CheckersUnitAttributes unit = piece.GetComponent<CheckersUnitAttributes>();
-
-        if (unit != null)
-            return CanPieceMove(unit);
-
-        else return false;
+        return CanPieceMove(piece.GetComponent<CheckersUnitAttributes>());
     }
 
     private bool CanPieceMove((int,int) xyPosition)
     {
-        GamePiece foundUnit = _gameBoardRef.GetPieceOnPosition(xyPosition, GameBoardLayer.Units);
-        if (foundUnit != null)
-            return CanPieceMove(foundUnit);
+        if (IsAllyOnPosition(xyPosition))
+            return CanPieceMove(_gameBoardRef.GetPieceOnPosition(xyPosition, GameBoardLayer.Units));
         else return false;
     }
 
@@ -301,8 +308,18 @@ public class UnitController : MonoBehaviour, ITurnListener
 
     private bool CanUnitJump(CheckersUnitAttributes unit)
     {
-        if (CalculateJumpMoves(unit).Count > 0)
-            return true;
+        return _unitsWithJumps.Contains(unit);
+    }
+
+    private bool CanUnitJump(GamePiece piece)
+    {
+        return CanUnitJump(piece.GetComponent<CheckersUnitAttributes>());
+    }
+
+    private bool CanUnitJump((int,int) xyPosition)
+    {
+        if (IsAllyOnPosition(xyPosition))
+            return CanUnitJump(_gameBoardRef.GetPieceOnPosition(xyPosition, GameBoardLayer.Units));
         else return false;
     }
 
@@ -338,31 +355,59 @@ public class UnitController : MonoBehaviour, ITurnListener
         else return false;
     }
 
-    private List<CheckersUnitAttributes> FindAllPossibleJumps()
+    private void FindAllPossibleJumps()
     {
-        List<CheckersUnitAttributes> unitsWithJumps = new List<CheckersUnitAttributes>();
+        List<CheckersUnitAttributes> foundJumps = new List<CheckersUnitAttributes>();
 
         foreach(CheckersUnitAttributes unit in _availableTeamUnits)
         {
             if (CanUnitJump(unit))
-                unitsWithJumps.Add(unit);
+                foundJumps.Add(unit);
         }
 
-        return unitsWithJumps;
+        _unitsWithJumps = foundJumps;
     }
 
-    private List<CheckersUnitAttributes> FindAllPossibleMoves()
+    private void FindAllPossibleMoves()
     {
-        List<CheckersUnitAttributes> unitsWithMoves = new List<CheckersUnitAttributes>();
+        List<CheckersUnitAttributes> foundMoves = new List<CheckersUnitAttributes>();
 
         foreach (CheckersUnitAttributes unit in _availableTeamUnits)
         {
             if (CanPieceMove(unit))
-                unitsWithMoves.Add(unit);
+                foundMoves.Add(unit);
         }
 
-        return unitsWithMoves;
+        _unitsWithMoves = foundMoves;
     }
+
+    private bool AreAnyJumpsAvailable()
+    {
+        return _unitsWithJumps.Count > 0;
+    }
+
+    private bool AreAnyMovesAvailable()
+    {
+        return _unitsWithMoves.Count > 0;
+    }
+
+    private bool DoesUnitHaveJumpAvaiable((int,int) xyPosition)
+    {
+        if (IsAllyOnPosition(xyPosition))
+            return DoesUnitHaveJumpAvaiable(_gameBoardRef.GetPieceOnPosition(xyPosition, GameBoardLayer.Units));
+        else return false;
+    }
+
+    private bool DoesUnitHaveJumpAvaiable(GamePiece piece)
+    {
+        return DoesUnitHaveJumpAvaiable(piece.GetComponent<CheckersUnitAttributes>());
+    }
+
+    private bool DoesUnitHaveJumpAvaiable(CheckersUnitAttributes unit)
+    {
+        return _unitsWithJumps.Contains(unit);
+    }
+
 
 
         //Getters, Setters, & Commands
@@ -399,6 +444,8 @@ public class UnitController : MonoBehaviour, ITurnListener
 
     public void RespondToNotification(int turnNumber)
     {
+        FindAllPossibleJumps();
+        FindAllPossibleMoves();
         _isControlsUnlocked = true;
         _isTurnOver = false;
     }
