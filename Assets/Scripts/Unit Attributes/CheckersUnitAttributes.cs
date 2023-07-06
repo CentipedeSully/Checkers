@@ -29,7 +29,7 @@ public class CheckersUnitAttributes : MonoBehaviour
             AddUpwardsBoardMovementToUnit();
 
         else if (IsUnitLight())
-            AddDownwardsBoardMovementTounit();
+            AddDownwardsBoardMovementToUnit();
     }
 
     private void AddUpwardsBoardMovementToUnit()
@@ -40,7 +40,7 @@ public class CheckersUnitAttributes : MonoBehaviour
         _legalMoveDirections.Add((-1, 1));
     }
     
-    private void AddDownwardsBoardMovementTounit()
+    private void AddDownwardsBoardMovementToUnit()
     {
         //right upwards diagonal
         _legalMoveDirections.Add((1, -1));
@@ -78,7 +78,7 @@ public class CheckersUnitAttributes : MonoBehaviour
             if (IsUnitDark())
             {
                 _isKing = true;
-                AddDownwardsBoardMovementTounit();
+                AddDownwardsBoardMovementToUnit();
             }
 
             else if (IsUnitLight())

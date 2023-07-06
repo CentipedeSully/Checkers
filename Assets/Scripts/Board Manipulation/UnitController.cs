@@ -24,14 +24,16 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] [Min(.1f)] private float _selectionCooldown = .5f;
     [SerializeField] private bool _isSelectorReady = true;
     [SerializeField] private CheckersUnitAttributes _selectedCheckersUnit;
+    [SerializeField] private List<CheckersUnitAttributes> _availableTeamUnits;
     [SerializeField] private GameObject _highlightGraphicPrefab;
     [SerializeField] private Transform _highlightContainer;
-    [SerializeField] private List<GameObject> _currentHighlights;
+    private List<GameObject> _currentHighlights;
 
     [Header("References")]
     [SerializeField] private TurnSystem _turnSystemRef;
     [SerializeField] private GameBoard _gameBoardRef;
     [SerializeField] private MouseToWorld2D _mouseTracker2D;
+    [SerializeField] private UnitController _opponentController;
 
     [Header("Debugging Utils")]
     [SerializeField] private bool _isDebugActive = false;
@@ -44,6 +46,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     {
         if (_currentHighlights.Count == 0)
             _currentHighlights = new List<GameObject>();
+        _availableTeamUnits = new List<CheckersUnitAttributes>();
 
         DetermineUnlockPhase();
     }
@@ -93,22 +96,15 @@ public class UnitController : MonoBehaviour, ITurnListener
             if (selectedPosition != (-1, -1))
             {
                 //Have we made a selection, yet?
-                if (_selectedCheckersUnit == null && _gameBoardRef.IsPositionOccupied(selectedPosition, GameBoardLayer.Units))
+                if (_selectedCheckersUnit == null && IsAllyOnPosition(selectedPosition) && CanPieceMove(selectedPosition))
                 {
-                    
-                    GamePiece possibleSelection = _gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units);
+                    _selectedCheckersUnit = _gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units).GetComponent<CheckersUnitAttributes>();
 
-                    //Save selection if we selected our own piece THAT HAS MOVES AVAILABLE
-                    if (possibleSelection.CompareTag(_team.ToString()) && CanPieceMove(possibleSelection.GetComponent<CheckersUnitAttributes>()))
-                    {
-                        _selectedCheckersUnit = _gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units).GetComponent<CheckersUnitAttributes>();
+                    //Show selection's possible moves
+                    HighlightPossibleMoves();
 
-                        //Show selection's possible moves
-                        HighlightPossibleMoves();
-
-                        //Cooldown Selector
-                        CooldownSelector();
-                    }
+                    //Cooldown Selector
+                    CooldownSelector();
                 }
 
                 else if (_selectedCheckersUnit != null)
@@ -185,24 +181,35 @@ public class UnitController : MonoBehaviour, ITurnListener
             return null;
         }
 
-        List<(int, int)> worldBoardPositions = new List<(int, int)>();
-        List<(int, int)> relativeMovementPositions = unit.GetLegalMoveDirectionsList();
-
-        //Convert each move direction of the unit into world cells
-        //Add the new world cell to the return list only if BOTH 1) the position exists on the board AND 2) the position is currently unoccupied 
-        foreach((int,int) direction in relativeMovementPositions)
+        if (CanUnitJump(unit))
         {
-            GamePiece unitGamePiece = unit.GetComponent<GamePiece>();
-
-            (int, int) worldPosition;
-            worldPosition.Item1 = unitGamePiece.GetGridPosition().Item1 + direction.Item1;
-            worldPosition.Item2 = unitGamePiece.GetGridPosition().Item2 + direction.Item2;
-
-            if (_gameBoardRef.GetGrid().IsCellInGrid(worldPosition.Item1, worldPosition.Item2) && !_gameBoardRef.IsPositionOccupied(worldPosition, GameBoardLayer.Units))
-                worldBoardPositions.Add(worldPosition);
+            List<(int,int)> availableJumps = CalculateJumpMoves(unit);
+            STKDebugLogger.LogStatement(_isDebugActive, $"Jumps Detected. Supplying {availableJumps.Count} alternative Jump Moves To Selection...");
+            return availableJumps;
         }
+            
 
-        return worldBoardPositions;
+        else
+        {
+            List<(int, int)> worldBoardPositions = new List<(int, int)>();
+            List<(int, int)> relativeMovementPositions = unit.GetLegalMoveDirectionsList();
+
+            //Convert each move direction of the unit into world cells
+            //Add the new world cell to the return list only if BOTH 1) the position exists on the board AND 2) the position is currently unoccupied 
+            foreach ((int, int) direction in relativeMovementPositions)
+            {
+                GamePiece unitGamePiece = unit.GetComponent<GamePiece>();
+
+                (int, int) worldPosition;
+                worldPosition.Item1 = unitGamePiece.GetGridPosition().Item1 + direction.Item1;
+                worldPosition.Item2 = unitGamePiece.GetGridPosition().Item2 + direction.Item2;
+
+                if (IsCellInGrid(worldPosition) && !IsPositionOccupied(worldPosition))
+                    worldBoardPositions.Add(worldPosition);
+            }
+
+            return worldBoardPositions;
+        }
     }
 
     private void HighlightPossibleMoves()
@@ -242,7 +249,123 @@ public class UnitController : MonoBehaviour, ITurnListener
         else return true;
     }
 
-    //Getters, Setters, & Commands
+    private bool CanPieceMove(GamePiece piece)
+    {
+        CheckersUnitAttributes unit = piece.GetComponent<CheckersUnitAttributes>();
+
+        if (unit != null)
+            return CanPieceMove(unit);
+
+        else return false;
+    }
+
+    private bool CanPieceMove((int,int) xyPosition)
+    {
+        GamePiece foundUnit = _gameBoardRef.GetPieceOnPosition(xyPosition, GameBoardLayer.Units);
+        if (foundUnit != null)
+            return CanPieceMove(foundUnit);
+        else return false;
+    }
+
+    private List<(int,int)> CalculateJumpMoves(CheckersUnitAttributes jumpingUnit)
+    {
+        if (jumpingUnit == null)
+        {
+            STKDebugLogger.LogWarning($"Unable to calculate jump moves from a null checker unit {name}, ID:{jumpingUnit.GetInstanceID()}");
+            return null;
+        }
+
+        List<(int, int)> possibleJumpPositions = new List<(int, int)>();
+        List<(int, int)> relativeMovementPositions = jumpingUnit.GetLegalMoveDirectionsList();
+        GamePiece unitGamePiece = jumpingUnit.GetComponent<GamePiece>();
+        (int, int) worldPosition;
+
+        //Find all possible jumps for every move direction of the unit
+        foreach ((int, int) direction in relativeMovementPositions)
+        {
+            worldPosition.Item1 = unitGamePiece.GetGridPosition().Item1 + direction.Item1;
+            worldPosition.Item2 = unitGamePiece.GetGridPosition().Item2 + direction.Item2;
+
+            if (IsEnemyOnPosition(worldPosition))
+            {
+                //the landing position is twice the move direction. Singular jumps occur in straight lines
+                (int, int) landingPosition = (worldPosition.Item1 + direction.Item1, worldPosition.Item2 + direction.Item2);
+
+                if (IsCellInGrid(landingPosition) && !IsPositionOccupied(landingPosition))
+                    possibleJumpPositions.Add(landingPosition);
+            }
+        } 
+
+        return possibleJumpPositions;
+    }
+
+    private bool CanUnitJump(CheckersUnitAttributes unit)
+    {
+        if (CalculateJumpMoves(unit).Count > 0)
+            return true;
+        else return false;
+    }
+
+    private bool IsCellInGrid((int,int) xyPosition)
+    {
+        return _gameBoardRef.GetGrid().IsCellInGrid(xyPosition.Item1, xyPosition.Item2);
+    }
+
+    private bool IsPositionOccupied((int,int) xyPosition)
+    {
+        return _gameBoardRef.IsPositionOccupied(xyPosition, GameBoardLayer.Units);
+    }
+
+    private bool IsEnemyOnPosition((int, int) xyPosition)
+    {
+        if (IsCellInGrid(xyPosition) && IsPositionOccupied(xyPosition))
+        {
+            GamePiece foundPiece = _gameBoardRef.GetPieceOnPosition(xyPosition, GameBoardLayer.Units);
+            return !foundPiece.CompareTag(_team.ToString());
+        }
+
+        else return false;
+    }
+
+    private bool IsAllyOnPosition((int,int) xyPosition)
+    {
+        if (IsCellInGrid(xyPosition) && IsPositionOccupied(xyPosition))
+        {
+            GamePiece foundPiece = _gameBoardRef.GetPieceOnPosition(xyPosition, GameBoardLayer.Units);
+            return foundPiece.CompareTag(_team.ToString());
+        }
+
+        else return false;
+    }
+
+    private List<CheckersUnitAttributes> FindAllPossibleJumps()
+    {
+        List<CheckersUnitAttributes> unitsWithJumps = new List<CheckersUnitAttributes>();
+
+        foreach(CheckersUnitAttributes unit in _availableTeamUnits)
+        {
+            if (CanUnitJump(unit))
+                unitsWithJumps.Add(unit);
+        }
+
+        return unitsWithJumps;
+    }
+
+    private List<CheckersUnitAttributes> FindAllPossibleMoves()
+    {
+        List<CheckersUnitAttributes> unitsWithMoves = new List<CheckersUnitAttributes>();
+
+        foreach (CheckersUnitAttributes unit in _availableTeamUnits)
+        {
+            if (CanPieceMove(unit))
+                unitsWithMoves.Add(unit);
+        }
+
+        return unitsWithMoves;
+    }
+
+
+        //Getters, Setters, & Commands
     public string GetConcreteListenerNameForDebugging()
     {
         return name + " ID: " + gameObject.GetInstanceID();
@@ -280,6 +403,16 @@ public class UnitController : MonoBehaviour, ITurnListener
         _isTurnOver = false;
     }
 
+    public void AddUnitToTeam(CheckersUnitAttributes newPiece)
+    {
+        if (!_availableTeamUnits.Contains(newPiece))
+            _availableTeamUnits.Add(newPiece);
+    }
 
+    public void RemoveUnitFromTeam(CheckersUnitAttributes existingPiece)
+    {
+        if (_availableTeamUnits.Contains(existingPiece))
+            _availableTeamUnits.Remove(existingPiece);
+    }    
 
 }

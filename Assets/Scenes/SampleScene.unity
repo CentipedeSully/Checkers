@@ -368,12 +368,13 @@ MonoBehaviour:
   _selectionCooldown: 0.5
   _isSelectorReady: 1
   _selectedCheckersUnit: {fileID: 0}
+  _availableTeamUnits: []
   _highlightGraphicPrefab: {fileID: 8314726070040338347, guid: 023fc3f967bc56d41a1524d319d61f99, type: 3}
   _highlightContainer: {fileID: 1668349679}
-  _currentHighlights: []
   _turnSystemRef: {fileID: 1099024384}
   _gameBoardRef: {fileID: 1715434040}
   _mouseTracker2D: {fileID: 658483722}
+  _opponentController: {fileID: 2123643594}
   _isDebugActive: 1
   _startTurnSystemCmd: 0
   _passTurnCmd: 0
@@ -770,6 +771,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _columns: 8
   _rows: 8
+  _darkTeamController: {fileID: 2123643594}
+  _lightTeamController: {fileID: 658483723}
   _lightTerrainPiece: {fileID: 6392121181979301574, guid: e58d2350dd939114c99fb490cf6fcfd5, type: 3}
   _darkTerrainPiece: {fileID: 3853023619398281798, guid: edf27e3b04243a64893fd0622589cf4a, type: 3}
   _lightPlayPiece: {fileID: 8605741882573104735, guid: 24c7409f6d3f97a479d44f22b1de2fe0, type: 3}
@@ -916,12 +919,13 @@ MonoBehaviour:
   _selectionCooldown: 0.5
   _isSelectorReady: 1
   _selectedCheckersUnit: {fileID: 0}
+  _availableTeamUnits: []
   _highlightGraphicPrefab: {fileID: 8314726070040338347, guid: 023fc3f967bc56d41a1524d319d61f99, type: 3}
   _highlightContainer: {fileID: 1668349679}
-  _currentHighlights: []
   _turnSystemRef: {fileID: 1099024384}
   _gameBoardRef: {fileID: 1715434040}
   _mouseTracker2D: {fileID: 2123643593}
+  _opponentController: {fileID: 658483723}
   _isDebugActive: 1
   _startTurnSystemCmd: 0
   _passTurnCmd: 0

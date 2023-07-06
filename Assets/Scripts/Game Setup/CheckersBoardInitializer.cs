@@ -12,6 +12,10 @@ public class CheckersBoardInitializer : MonoBehaviour
     [SerializeField] private int _columns = 8;
     [SerializeField] private int _rows = 8;
 
+    [Header("Unit Controllers")]
+    [SerializeField] private UnitController _darkTeamController;
+    [SerializeField] private UnitController _lightTeamController;
+
     [Header("Prefab Setup")]
     [SerializeField] private GamePiece _lightTerrainPiece;
     [SerializeField] private GamePiece _darkTerrainPiece;
@@ -106,9 +110,19 @@ public class CheckersBoardInitializer : MonoBehaviour
                 if (IsTerrainDark(r, c))
                 {
                     if (c < 3)
-                        _gameBoardRef.AddGamePiece(CreateDarkPlayPiece(), GameBoardLayer.Units, (r, c));
+                    {
+                        GamePiece newDarkUnit = CreateDarkPlayPiece();
+                        _gameBoardRef.AddGamePiece(newDarkUnit, GameBoardLayer.Units, (r, c));
+                        _darkTeamController.AddUnitToTeam(newDarkUnit.GetComponent<CheckersUnitAttributes>());
+                    }
+                        
                     else if (c > 4)
-                        _gameBoardRef.AddGamePiece(CreateLightPlayPiece(), GameBoardLayer.Units, (r, c));
+                    {
+                        GamePiece newLightUnit = CreateLightPlayPiece();
+                        _gameBoardRef.AddGamePiece(newLightUnit, GameBoardLayer.Units, (r, c));
+                        _lightTeamController.AddUnitToTeam(newLightUnit.GetComponent<CheckersUnitAttributes>());
+                    }
+                        
                 }
             }
         }
