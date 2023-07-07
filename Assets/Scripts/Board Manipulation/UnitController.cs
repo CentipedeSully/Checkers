@@ -36,6 +36,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     private bool _isJumpAvaiable = false;
     private (int, int) _jumpOrigin;
     private (int, int) _jumpEnd;
+    [SerializeField] private int _kingsRow = -1;
 
     [Header("References")]
     [SerializeField] private TurnSystem _turnSystemRef;
@@ -58,6 +59,7 @@ public class UnitController : MonoBehaviour, ITurnListener
         _unitsWithMoves = new List<CheckersUnitAttributes>();
 
         DetermineUnlockPhase();
+        DetermineKingsRow();
     }
 
     private void Start()
@@ -77,6 +79,7 @@ public class UnitController : MonoBehaviour, ITurnListener
         {
             _isGameOver = true;
             STKDebugLogger.LogStatement(_isDebugActive,$"Game Over. No moves detected.");
+            _turnSystemRef.StopTurnSystem();
         }
             
     }
@@ -96,6 +99,14 @@ public class UnitController : MonoBehaviour, ITurnListener
             _unlockPhase = TurnPhase.MainPhase;
         else if (_team == Team.Light)
             _unlockPhase = TurnPhase.ReactionPhase;
+    }
+
+    private void DetermineKingsRow()
+    {
+        if (_team.ToString() == "Dark")
+            _kingsRow = _gameBoardRef.GetRowCount() - 1;
+        else if (_team.ToString() == "Light")
+            _kingsRow = 0;
     }
 
     private void PassTurn()
@@ -124,19 +135,20 @@ public class UnitController : MonoBehaviour, ITurnListener
                         STKDebugLogger.LogStatement(_isDebugActive, $"Jump Origin: {_jumpOrigin.Item1},{_jumpOrigin.Item2}");
                     }
                         
-
                     else if (AreAnyMovesAvailable() && CanPieceMove(selectedPosition))
                     {
                         ClearHighlights();
                         CommitSelection(_gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units));
                     }
-                        
                 }
 
                 else if (_selectedCheckersUnit != null)
                 {
                     if (IsSelectedMoveValid(selectedPosition) && _isJumpAvaiable)
                     {
+                        //Cooldown Selector
+                        CooldownSelector();
+
                         //Clear Possible Moves graphics
                         ClearHighlights();
 
@@ -145,18 +157,11 @@ public class UnitController : MonoBehaviour, ITurnListener
 
                         //Remove The Jumped Piece
                         _jumpEnd = selectedPosition;
-                        STKDebugLogger.LogStatement(_isDebugActive, $"Jump End: {_jumpEnd.Item1},{_jumpEnd.Item2}");
                         RemoveJumpedPiece();
 
-                        //recalculate the moves and jumps on the team 
-                        FindAllPossibleJumps();
-                        FindAllPossibleMoves();
-
-                        //Cooldown Selector
-                        CooldownSelector();
-
-                        if (CanUnitJump(_selectedCheckersUnit) == false)
+                        if (IsSelectedUnitInKingsRow())
                         {
+                            _selectedCheckersUnit.KingMe();
                             _isJumpAvaiable = false;
 
                             //clear selection
@@ -168,10 +173,29 @@ public class UnitController : MonoBehaviour, ITurnListener
 
                         else
                         {
-                            HighlightPossibleMoves();
-                            _jumpOrigin = _jumpEnd;
-                        }
-                            
+                            //recalculate the moves and jumps on the team 
+                            FindAllPossibleJumps();
+                            FindAllPossibleMoves();
+
+                            //End turn if the selected unit has no other jumps available
+                            if (CanUnitJump(_selectedCheckersUnit) == false)
+                            {
+                                _isJumpAvaiable = false;
+
+                                //clear selection
+                                _selectedCheckersUnit = null;
+
+                                //End turn
+                                PassTurn();
+                            }
+
+                            //Otherwise reset Jump Utilities for another jump
+                            else
+                            {
+                                HighlightPossibleMoves();
+                                _jumpOrigin = _jumpEnd;
+                            }
+                        }    
                     }
 
                     else if (IsSelectedMoveValid(selectedPosition))
@@ -181,6 +205,9 @@ public class UnitController : MonoBehaviour, ITurnListener
 
                         //Move piece to new location
                         _selectedCheckersUnit.GetComponent<GamePiece>().SetGridPosition(selectedPosition);
+
+                        if (IsSelectedUnitInKingsRow())
+                            _selectedCheckersUnit.KingMe();
 
                         //clear selection
                         _selectedCheckersUnit = null;
@@ -511,9 +538,22 @@ public class UnitController : MonoBehaviour, ITurnListener
 
     }
 
+    private bool IsSelectedUnitInKingsRow()
+    {
+        if (_selectedCheckersUnit == null)
+        {
+            STKDebugLogger.LogError($"{GetConcreteListenerNameForDebugging()} Attempted to check King's Row status on null selection. Returning false");
+            return false;
+        }
+
+        if (_selectedCheckersUnit.GetComponent<GamePiece>().GetGridPosition().Item2 == _kingsRow)
+            return true;
+        else return false;
+    }
 
 
-        //Getters, Setters, & Commands
+
+    //Getters, Setters, & Commands
     public string GetConcreteListenerNameForDebugging()
     {
         return name + " ID: " + gameObject.GetInstanceID();

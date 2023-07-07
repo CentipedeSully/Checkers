@@ -365,12 +365,17 @@ MonoBehaviour:
   _isControlsUnlocked: 0
   _team: 1
   _isTurnOver: 1
+  _isGameOver: 0
   _selectionCooldown: 0.5
   _isSelectorReady: 1
   _selectedCheckersUnit: {fileID: 0}
+  _unitsWithJumps: []
+  _unitsWithMoves: []
   _availableTeamUnits: []
-  _highlightGraphicPrefab: {fileID: 8314726070040338347, guid: 023fc3f967bc56d41a1524d319d61f99, type: 3}
+  _moveOptionsHighlightPrefab: {fileID: 8314726070040338347, guid: 023fc3f967bc56d41a1524d319d61f99, type: 3}
+  _selectablePiecesHighlightPrefab: {fileID: 5317779277184454251, guid: faa43dd29619d934db92b0103c8c4c76, type: 3}
   _highlightContainer: {fileID: 1668349679}
+  _kingsRow: -1
   _turnSystemRef: {fileID: 1099024384}
   _gameBoardRef: {fileID: 1715434040}
   _mouseTracker2D: {fileID: 658483722}
@@ -916,12 +921,17 @@ MonoBehaviour:
   _isControlsUnlocked: 0
   _team: 0
   _isTurnOver: 1
+  _isGameOver: 0
   _selectionCooldown: 0.5
   _isSelectorReady: 1
   _selectedCheckersUnit: {fileID: 0}
+  _unitsWithJumps: []
+  _unitsWithMoves: []
   _availableTeamUnits: []
-  _highlightGraphicPrefab: {fileID: 8314726070040338347, guid: 023fc3f967bc56d41a1524d319d61f99, type: 3}
+  _moveOptionsHighlightPrefab: {fileID: 8314726070040338347, guid: 023fc3f967bc56d41a1524d319d61f99, type: 3}
+  _selectablePiecesHighlightPrefab: {fileID: 5317779277184454251, guid: faa43dd29619d934db92b0103c8c4c76, type: 3}
   _highlightContainer: {fileID: 1668349679}
+  _kingsRow: -1
   _turnSystemRef: {fileID: 1099024384}
   _gameBoardRef: {fileID: 1715434040}
   _mouseTracker2D: {fileID: 2123643593}
