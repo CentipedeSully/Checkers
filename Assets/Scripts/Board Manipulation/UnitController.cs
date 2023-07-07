@@ -19,6 +19,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] private Team _team;
     private TurnPhase _unlockPhase;
     [SerializeField] private bool _isTurnOver = true;
+    [SerializeField] private bool _isGameOver = false;
 
     [Header("Unit Selection Settings")]
     [SerializeField] [Min(.1f)] private float _selectionCooldown = .5f;
@@ -27,9 +28,14 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] private List<CheckersUnitAttributes> _unitsWithJumps;
     [SerializeField] private List<CheckersUnitAttributes> _unitsWithMoves;
     [SerializeField] private List<CheckersUnitAttributes> _availableTeamUnits;
-    [SerializeField] private GameObject _highlightGraphicPrefab;
+    [SerializeField] private GameObject _moveOptionsHighlightPrefab;
+    [SerializeField] private GameObject _selectablePiecesHighlightPrefab;
     [SerializeField] private Transform _highlightContainer;
     private List<GameObject> _currentHighlights;
+
+    private bool _isJumpAvaiable = false;
+    private (int, int) _jumpOrigin;
+    private (int, int) _jumpEnd;
 
     [Header("References")]
     [SerializeField] private TurnSystem _turnSystemRef;
@@ -46,8 +52,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     //Monobehaviours
     private void Awake()
     {
-        if (_currentHighlights.Count == 0)
-            _currentHighlights = new List<GameObject>();
+        _currentHighlights = new List<GameObject>();
         _availableTeamUnits = new List<CheckersUnitAttributes>();
         _unitsWithJumps = new List<CheckersUnitAttributes>();
         _unitsWithMoves = new List<CheckersUnitAttributes>();
@@ -67,6 +72,12 @@ public class UnitController : MonoBehaviour, ITurnListener
 
         if (_isControlsUnlocked && AreAnyMovesAvailable())
             ListenForSelection();
+
+        else if (_isControlsUnlocked && AreAnyMovesAvailable() == false)
+        {
+            _isGameOver = true;
+            STKDebugLogger.LogStatement(_isDebugActive,$"Game Over. No moves detected.");
+        }
             
     }
 
@@ -97,23 +108,73 @@ public class UnitController : MonoBehaviour, ITurnListener
         if (Input.GetMouseButton(0) && _isSelectorReady)
         {
             (int, int) selectedPosition = CaptureBoardLocationOfMouse();
+            //STKDebugLogger.LogStatement(_isDebugActive, $"Selected Cell: {selectedPosition.Item1},{selectedPosition.Item2}");
 
             if (selectedPosition != (-1, -1))
             {
-                
                 //Have we made a selection, yet?
                 if (_selectedCheckersUnit == null)
                 {
                     if (AreAnyJumpsAvailable() && CanUnitJump(selectedPosition))
+                    {
+                        ClearHighlights();
                         CommitSelection(_gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units));
+                        _isJumpAvaiable = true;
+                        _jumpOrigin = selectedPosition;
+                        STKDebugLogger.LogStatement(_isDebugActive, $"Jump Origin: {_jumpOrigin.Item1},{_jumpOrigin.Item2}");
+                    }
+                        
 
                     else if (AreAnyMovesAvailable() && CanPieceMove(selectedPosition))
+                    {
+                        ClearHighlights();
                         CommitSelection(_gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units));
+                    }
+                        
                 }
 
                 else if (_selectedCheckersUnit != null)
                 {
-                    if (IsSelectedMoveValid(selectedPosition))
+                    if (IsSelectedMoveValid(selectedPosition) && _isJumpAvaiable)
+                    {
+                        //Clear Possible Moves graphics
+                        ClearHighlights();
+
+                        //Move piece to new location
+                        _selectedCheckersUnit.GetComponent<GamePiece>().SetGridPosition(selectedPosition);
+
+                        //Remove The Jumped Piece
+                        _jumpEnd = selectedPosition;
+                        STKDebugLogger.LogStatement(_isDebugActive, $"Jump End: {_jumpEnd.Item1},{_jumpEnd.Item2}");
+                        RemoveJumpedPiece();
+
+                        //recalculate the moves and jumps on the team 
+                        FindAllPossibleJumps();
+                        FindAllPossibleMoves();
+
+                        //Cooldown Selector
+                        CooldownSelector();
+
+                        if (CanUnitJump(_selectedCheckersUnit) == false)
+                        {
+                            _isJumpAvaiable = false;
+
+                            //clear selection
+                            _selectedCheckersUnit = null;
+
+                            //End turn
+                            PassTurn();
+                        }
+
+                        else
+                        {
+                            HighlightPossibleMoves();
+                            _jumpOrigin = _jumpEnd;
+                        }
+                            
+                    }
+
+                    else if (IsSelectedMoveValid(selectedPosition))
                     {
                         //Clear Possible Moves graphics
                         ClearHighlights();
@@ -199,7 +260,7 @@ public class UnitController : MonoBehaviour, ITurnListener
         if (CanUnitJump(unit))
         {
             List<(int,int)> availableJumps = CalculateJumpMoves(unit);
-            STKDebugLogger.LogStatement(_isDebugActive, $"Jumps Detected. Supplying {availableJumps.Count} alternative Jump Moves To Selection...");
+            //STKDebugLogger.LogStatement(_isDebugActive, $"Jumps Detected. Supplying {availableJumps.Count} alternative Jump Moves To Selection...");
             return availableJumps;
         }
             
@@ -230,10 +291,34 @@ public class UnitController : MonoBehaviour, ITurnListener
     private void HighlightPossibleMoves()
     {
         List<(int, int)> availableCellPositions = CalculateWorldMoveableBoardPositionsFromCheckersUnit(_selectedCheckersUnit);
+        HighlightPositions(availableCellPositions, _moveOptionsHighlightPrefab);
+    }
 
-        foreach ((int,int) cellPosition in availableCellPositions)
+    private void HighlightUnitsWithMoves()
+    {
+        List<(int, int)> xyPositions = new List<(int, int)>();
+
+         foreach (CheckersUnitAttributes unit in _unitsWithMoves)
+            xyPositions.Add(unit.GetComponent<GamePiece>().GetGridPosition());
+
+        HighlightPositions(xyPositions, _selectablePiecesHighlightPrefab);
+    }
+
+    private void HighlightUnitsWithJumps()
+    {
+        List<(int, int)> xyPositions = new List<(int, int)>();
+
+        foreach (CheckersUnitAttributes unit in _unitsWithJumps)
+            xyPositions.Add(unit.GetComponent<GamePiece>().GetGridPosition());
+
+        HighlightPositions(xyPositions, _selectablePiecesHighlightPrefab);
+    }
+
+    private void HighlightPositions(List<(int,int)> highlightPositions, GameObject highlingPrefab)
+    {
+        foreach ((int, int) xyPosition in highlightPositions)
         {
-            GameObject newHighlight = Instantiate(_highlightGraphicPrefab, _gameBoardRef.GetGrid().GetPositionFromCell(cellPosition.Item1, cellPosition.Item2), Quaternion.identity, _highlightContainer);
+            GameObject newHighlight = Instantiate(_moveOptionsHighlightPrefab, _gameBoardRef.GetGrid().GetPositionFromCell(xyPosition.Item1, xyPosition.Item2), Quaternion.identity, _highlightContainer);
             _currentHighlights.Add(newHighlight);
         }
     }
@@ -361,7 +446,7 @@ public class UnitController : MonoBehaviour, ITurnListener
 
         foreach(CheckersUnitAttributes unit in _availableTeamUnits)
         {
-            if (CanUnitJump(unit))
+            if (CalculateJumpMoves(unit).Count > 0)
                 foundJumps.Add(unit);
         }
 
@@ -374,7 +459,7 @@ public class UnitController : MonoBehaviour, ITurnListener
 
         foreach (CheckersUnitAttributes unit in _availableTeamUnits)
         {
-            if (CanPieceMove(unit))
+            if (CalculateWorldMoveableBoardPositionsFromCheckersUnit(unit).Count > 0)
                 foundMoves.Add(unit);
         }
 
@@ -406,6 +491,24 @@ public class UnitController : MonoBehaviour, ITurnListener
     private bool DoesUnitHaveJumpAvaiable(CheckersUnitAttributes unit)
     {
         return _unitsWithJumps.Contains(unit);
+    }
+
+    private void RemoveJumpedPiece()
+    {
+        (int, int) jumpedPosition = (-99, -99);
+        if (_jumpOrigin.Item1 > _jumpEnd.Item1)
+            jumpedPosition.Item1 = _jumpEnd.Item1 + 1;
+        else if (_jumpOrigin.Item1 < _jumpEnd.Item1)
+            jumpedPosition.Item1 = _jumpOrigin.Item1 + 1;
+
+        if (_jumpOrigin.Item2 > _jumpEnd.Item2)
+            jumpedPosition.Item2 = _jumpEnd.Item2 +1;
+        else if (_jumpOrigin.Item2 < _jumpEnd.Item2)
+            jumpedPosition.Item2 = _jumpOrigin.Item2 + 1;
+
+        STKDebugLogger.LogStatement(_isDebugActive, $"Jumped Position: {jumpedPosition.Item1},{jumpedPosition.Item2}");
+        _opponentController.RemoveUnitFromGame(_gameBoardRef.GetPieceOnPosition(jumpedPosition, GameBoardLayer.Units).GetComponent<CheckersUnitAttributes>());
+
     }
 
 
@@ -446,6 +549,13 @@ public class UnitController : MonoBehaviour, ITurnListener
     {
         FindAllPossibleJumps();
         FindAllPossibleMoves();
+
+        if (AreAnyJumpsAvailable())
+            HighlightUnitsWithJumps();
+
+        else if (AreAnyMovesAvailable())
+            HighlightUnitsWithMoves();
+
         _isControlsUnlocked = true;
         _isTurnOver = false;
     }
@@ -456,10 +566,14 @@ public class UnitController : MonoBehaviour, ITurnListener
             _availableTeamUnits.Add(newPiece);
     }
 
-    public void RemoveUnitFromTeam(CheckersUnitAttributes existingPiece)
+    public void RemoveUnitFromGame(CheckersUnitAttributes existingPiece)
     {
         if (_availableTeamUnits.Contains(existingPiece))
+        {
             _availableTeamUnits.Remove(existingPiece);
+            _gameBoardRef.RemoveGamePieceFromBoard(existingPiece.GetComponent<GamePiece>());
+        }
+            
     }    
 
 }
