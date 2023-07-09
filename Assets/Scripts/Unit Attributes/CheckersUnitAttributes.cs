@@ -8,6 +8,7 @@ public class CheckersUnitAttributes : MonoBehaviour
 {
     //Declarations
     [SerializeField] private bool _isKing;
+    [SerializeField] private GameObject _kingGraphicObject;
     private List<(int, int)> _legalMoveDirections;
 
 
@@ -15,6 +16,7 @@ public class CheckersUnitAttributes : MonoBehaviour
     //Monobehaviours
     private void Awake()
     {
+        _kingGraphicObject.SetActive(false);
         InitializeMoveDirections();
     }
 
@@ -79,12 +81,14 @@ public class CheckersUnitAttributes : MonoBehaviour
             {
                 _isKing = true;
                 AddDownwardsBoardMovementToUnit();
+                _kingGraphicObject.SetActive(true);
             }
 
             else if (IsUnitLight())
             {
                 _isKing = true;
                 AddUpwardsBoardMovementToUnit();
+                _kingGraphicObject.SetActive(true);
             }    
         }
     }
