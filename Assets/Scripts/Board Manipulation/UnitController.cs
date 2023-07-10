@@ -134,8 +134,8 @@ public class UnitController : MonoBehaviour, ITurnListener
                         _jumpOrigin = selectedPosition;
                         STKDebugLogger.LogStatement(_isDebugActive, $"Jump Origin: {_jumpOrigin.Item1},{_jumpOrigin.Item2}");
                     }
-                        
-                    else if (AreAnyMovesAvailable() && CanPieceMove(selectedPosition))
+
+                    else if (AreAnyJumpsAvailable() == false && AreAnyMovesAvailable() && CanPieceMove(selectedPosition))
                     {
                         ClearHighlights();
                         CommitSelection(_gameBoardRef.GetPieceOnPosition(selectedPosition, GameBoardLayer.Units));
@@ -144,7 +144,7 @@ public class UnitController : MonoBehaviour, ITurnListener
 
                 else if (_selectedCheckersUnit != null)
                 {
-                    if (IsSelectedMoveValid(selectedPosition) && _isJumpAvaiable)
+                    if (IsSelectedMoveAValidJump(selectedPosition) && _isJumpAvaiable)
                     {
                         //Cooldown Selector
                         CooldownSelector();
@@ -274,6 +274,15 @@ public class UnitController : MonoBehaviour, ITurnListener
         if (CalculateWorldMoveableBoardPositionsFromCheckersUnit(_selectedCheckersUnit).Contains(xyPosition))
             return true;
         else return false;
+    }
+
+    private bool IsSelectedMoveAValidJump((int,int) xyPosition)
+    {
+
+        if (CalculateJumpMoves(_selectedCheckersUnit).Contains(xyPosition))
+            return true;
+        else return false;
+
     }
 
     private List<(int,int)> CalculateWorldMoveableBoardPositionsFromCheckersUnit(CheckersUnitAttributes unit)
