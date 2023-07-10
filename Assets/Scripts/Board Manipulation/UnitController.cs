@@ -269,7 +269,7 @@ public class UnitController : MonoBehaviour, ITurnListener
         CooldownSelector();
     }
 
-    private bool IsSelectedMoveValid((int,int) xyPosition)
+    private bool IsSelectedMoveValid((int,int) xyPosition)// Filter out non jumps if jump is available
     {
         if (CalculateWorldMoveableBoardPositionsFromCheckersUnit(_selectedCheckersUnit).Contains(xyPosition))
             return true;
