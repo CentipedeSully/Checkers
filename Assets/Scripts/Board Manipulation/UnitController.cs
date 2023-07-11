@@ -30,6 +30,9 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] private List<CheckersUnitAttributes> _availableTeamUnits;
     [SerializeField] private GameObject _moveOptionsHighlightPrefab;
     [SerializeField] private GameObject _selectablePiecesHighlightPrefab;
+    [SerializeField] private GameObject _mouseHoverHighlightPrefab;
+    private GameObject _mouseHoverHighlight;
+    private (int, int) _currentHighlightPosition;
     [SerializeField] private Transform _highlightContainer;
     private List<GameObject> _currentHighlights;
 
@@ -72,6 +75,9 @@ public class UnitController : MonoBehaviour, ITurnListener
         if (_isDebugActive)
             ListenForDebugCommands();
 
+        if (_isControlsUnlocked)
+            ShowMouseHoverHighlight();
+
         if (_isControlsUnlocked && AreAnyMovesAvailable())
             ListenForSelection();
 
@@ -112,6 +118,29 @@ public class UnitController : MonoBehaviour, ITurnListener
     private void PassTurn()
     {
         _isTurnOver = true;
+    }
+
+    private void ShowMouseHoverHighlight()
+    {
+        if (_mouseHoverHighlight == null)
+        {
+            _currentHighlightPosition = (0, 0);
+            _mouseHoverHighlight = Instantiate(_mouseHoverHighlightPrefab, 
+                                                _gameBoardRef.GetGrid().GetPositionFromCell(_currentHighlightPosition.Item1, _currentHighlightPosition.Item2), 
+                                                Quaternion.identity, transform);
+        }
+            
+
+        if (IsMouseOnGrid() && _currentHighlightPosition != _gameBoardRef.GetGrid().GetCellFromPosition(_mouseTracker2D.GetWorldPosition()))
+        {
+            _currentHighlightPosition = _gameBoardRef.GetGrid().GetCellFromPosition(_mouseTracker2D.GetWorldPosition());
+            _mouseHoverHighlight.transform.position = _gameBoardRef.GetGrid().GetPositionFromCell(_currentHighlightPosition.Item1,_currentHighlightPosition.Item2);
+        }
+    }
+
+    private bool IsMouseOnGrid()
+    {
+        return _gameBoardRef.GetGrid().IsPositionOnGrid(_mouseTracker2D.GetWorldPosition());
     }
 
     private void ListenForSelection()
