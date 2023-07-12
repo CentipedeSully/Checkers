@@ -42,6 +42,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] private int _kingsRow = -1;
 
     [Header("References")]
+    [SerializeField] private UIController _uiController;
     [SerializeField] private TurnSystem _turnSystemRef;
     [SerializeField] private GameBoard _gameBoardRef;
     [SerializeField] private MouseToWorld2D _mouseTracker2D;
@@ -188,7 +189,7 @@ public class UnitController : MonoBehaviour, ITurnListener
                         _jumpEnd = selectedPosition;
                         RemoveJumpedPiece();
 
-                        if (IsSelectedUnitInKingsRow())
+                        if (IsSelectedUnitInKingsRow() && _selectedCheckersUnit.IsKing() == false)
                         {
                             _selectedCheckersUnit.KingMe();
                             _isJumpAvaiable = false;
@@ -197,6 +198,7 @@ public class UnitController : MonoBehaviour, ITurnListener
                             _selectedCheckersUnit = null;
 
                             //End turn
+                            _uiController.ResetDrawCounter();
                             PassTurn();
                         }
 
@@ -215,6 +217,7 @@ public class UnitController : MonoBehaviour, ITurnListener
                                 _selectedCheckersUnit = null;
 
                                 //End turn
+                                _uiController.ResetDrawCounter();
                                 PassTurn();
                             }
 
@@ -224,7 +227,7 @@ public class UnitController : MonoBehaviour, ITurnListener
                                 HighlightPossibleMoves();
                                 _jumpOrigin = _jumpEnd;
                             }
-                        }    
+                        }  
                     }
 
                     else if (IsSelectedMoveValid(selectedPosition))
@@ -235,8 +238,12 @@ public class UnitController : MonoBehaviour, ITurnListener
                         //Move piece to new location
                         _selectedCheckersUnit.GetComponent<GamePiece>().SetGridPosition(selectedPosition);
 
-                        if (IsSelectedUnitInKingsRow())
+                        if (IsSelectedUnitInKingsRow() && _selectedCheckersUnit.IsKing() == false)
+                        {
                             _selectedCheckersUnit.KingMe();
+                            _uiController.ResetDrawCounter();
+                        }
+                            
 
                         //clear selection
                         _selectedCheckersUnit = null;
@@ -589,6 +596,20 @@ public class UnitController : MonoBehaviour, ITurnListener
         else return false;
     }
 
+    private void ChangeUIToReflectTurnStatus()
+    {
+        if (_team == Team.Dark)
+        {
+            _uiController.HideLightTurnUI();
+            _uiController.ShowDarkTurnUI();
+        }
+
+        else if (_team == Team.Light)
+        {
+            _uiController.HideDarkTurnUI();
+            _uiController.ShowLightTurnUI();
+        }
+    }
 
 
     //Getters, Setters, & Commands
@@ -625,6 +646,10 @@ public class UnitController : MonoBehaviour, ITurnListener
 
     public void RespondToNotification(int turnNumber)
     {
+        _uiController.IncrementTurnCount();
+        _uiController.IncrementDrawCounter();
+        ChangeUIToReflectTurnStatus();
+
         FindAllPossibleJumps();
         FindAllPossibleMoves();
 
@@ -650,6 +675,10 @@ public class UnitController : MonoBehaviour, ITurnListener
         {
             _availableTeamUnits.Remove(existingPiece);
             _gameBoardRef.RemoveGamePieceFromBoard(existingPiece.GetComponent<GamePiece>());
+            if (_team == Team.Dark)
+                _uiController.SetDarkPieceCount(_availableTeamUnits.Count);
+            else if (_team == Team.Light)
+                _uiController.SetLightPieceCount(_availableTeamUnits.Count);
         }
             
     }    
