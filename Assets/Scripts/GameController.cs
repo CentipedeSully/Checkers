@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using SullysToolkit.TableTop;
 using SullysToolkit;
 using UnityEngine.SceneManagement;
 
@@ -9,8 +10,41 @@ public class GameController : MonoBehaviour
     [SerializeField] private TurnSystem _turnSystem;
     [SerializeField] private GameObject _startButton;
     [SerializeField] private GameObject _restartButton;
+    [SerializeField] private UIController _uiController;
+    [SerializeField] private UnitController _darkTeamController;
+    [SerializeField] private UnitController _lightTeamController;
+    [SerializeField] private GameBoard _gameBoard;
+    [SerializeField] private GameObject _winningPiecesHighlightPrefab;
+    [SerializeField] private GameObject _drawHighlightPrefab;
+    [SerializeField] private int _turnsUntilDraw = 40;
 
-    public void StartTurnSystem()
+    private void HighlightPieces( List<(int,int)> xyPositions, GameObject highlightPrefab)
+    {
+        foreach ((int,int) xyPosition in xyPositions)
+        {
+            if (_gameBoard.GetGrid().IsCellInGrid(xyPosition.Item1,xyPosition.Item2))
+            {
+                GameObject newHighlight = Instantiate(highlightPrefab, _gameBoard.GetGrid().GetPositionFromCell(xyPosition.Item1, xyPosition.Item2),
+                                            Quaternion.identity, transform);
+
+            }
+        }
+    }
+
+    private List<(int,int)> BuildAllPositionsList()
+    {
+        List<(int, int)> allOccupiedPositions = new List<(int, int)>();
+
+        foreach ((int,int) position in _darkTeamController.GetAllUnitPositions())
+            allOccupiedPositions.Add(position);
+
+        foreach ((int, int) position in _lightTeamController.GetAllUnitPositions())
+            allOccupiedPositions.Add(position);
+
+        return allOccupiedPositions;
+    }
+
+    public void StartGame()
     {
         _startButton.SetActive(false);
         _restartButton.SetActive(true);
@@ -22,4 +56,31 @@ public class GameController : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
+    public void EndGameViaVictory(UnitController winningTeamController)
+    {
+        _turnSystem.StopTurnSystem();
+        HighlightPieces(winningTeamController.GetAllUnitPositions(), _winningPiecesHighlightPrefab);
+
+        //Show Win UI
+        _uiController.HideDarkTurnUI();
+        _uiController.HideLightTurnUI();
+    }
+
+    public void EndGameViaDraw()
+    {
+        _turnSystem.StopTurnSystem();
+        HighlightPieces(BuildAllPositionsList(), _drawHighlightPrefab);
+
+        //Show Draw UI
+        _uiController.HideDarkTurnUI();
+        _uiController.HideLightTurnUI();
+
+    }
+
+    public int GetTurnsUntilDraw()
+    {
+        return _turnsUntilDraw;
+    }
+
+    
 }

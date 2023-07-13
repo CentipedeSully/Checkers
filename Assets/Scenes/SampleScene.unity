@@ -2733,7 +2733,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 780643435}
         m_TargetAssemblyTypeName: GameController, Assembly-CSharp
-        m_MethodName: StartTurnSystem
+        m_MethodName: StartGame
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3151,7 +3151,6 @@ MonoBehaviour:
   _isControlsUnlocked: 0
   _team: 1
   _isTurnOver: 1
-  _isGameOver: 0
   _selectionCooldown: 0.35
   _isSelectorReady: 1
   _selectedCheckersUnit: {fileID: 0}
@@ -3163,6 +3162,7 @@ MonoBehaviour:
   _mouseHoverHighlightPrefab: {fileID: 9200742973762914626, guid: cd3eeef1cafe81a4995f6198c044106a, type: 3}
   _highlightContainer: {fileID: 1668349679}
   _kingsRow: -1
+  _gameController: {fileID: 780643435}
   _uiController: {fileID: 589973948}
   _turnSystemRef: {fileID: 1099024384}
   _gameBoardRef: {fileID: 1715434040}
@@ -3612,6 +3612,13 @@ MonoBehaviour:
   _turnSystem: {fileID: 1099024384}
   _startButton: {fileID: 569105132}
   _restartButton: {fileID: 421837130}
+  _uiController: {fileID: 589973948}
+  _darkTeamController: {fileID: 2123643594}
+  _lightTeamController: {fileID: 658483723}
+  _gameBoard: {fileID: 1715434040}
+  _winningPiecesHighlightPrefab: {fileID: 396939667069593235, guid: b50578dc7688e6b46a9dbb581c042eee, type: 3}
+  _drawHighlightPrefab: {fileID: 349418233631153445, guid: abc230b1f1da8bf449e57de2543f2c02, type: 3}
+  _turnsUntilDraw: 40
 --- !u!1 &813407571
 GameObject:
   m_ObjectHideFlags: 0
@@ -8368,7 +8375,6 @@ MonoBehaviour:
   _isControlsUnlocked: 0
   _team: 0
   _isTurnOver: 1
-  _isGameOver: 0
   _selectionCooldown: 0.35
   _isSelectorReady: 1
   _selectedCheckersUnit: {fileID: 0}
@@ -8380,6 +8386,7 @@ MonoBehaviour:
   _mouseHoverHighlightPrefab: {fileID: 8969935485666078555, guid: 3426412aa35dae040a7d6e815a12d30f, type: 3}
   _highlightContainer: {fileID: 1668349679}
   _kingsRow: -1
+  _gameController: {fileID: 780643435}
   _uiController: {fileID: 589973948}
   _turnSystemRef: {fileID: 1099024384}
   _gameBoardRef: {fileID: 1715434040}

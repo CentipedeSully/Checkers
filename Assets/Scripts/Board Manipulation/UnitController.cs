@@ -19,7 +19,6 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] private Team _team;
     private TurnPhase _unlockPhase;
     [SerializeField] private bool _isTurnOver = true;
-    [SerializeField] private bool _isGameOver = false;
 
     [Header("Unit Selection Settings")]
     [SerializeField] [Min(.1f)] private float _selectionCooldown = .5f;
@@ -42,6 +41,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] private int _kingsRow = -1;
 
     [Header("References")]
+    [SerializeField] private GameController _gameController;
     [SerializeField] private UIController _uiController;
     [SerializeField] private TurnSystem _turnSystemRef;
     [SerializeField] private GameBoard _gameBoardRef;
@@ -84,9 +84,8 @@ public class UnitController : MonoBehaviour, ITurnListener
 
         else if (_isControlsUnlocked && AreAnyMovesAvailable() == false)
         {
-            _isGameOver = true;
             STKDebugLogger.LogStatement(_isDebugActive,$"Game Over. No moves detected.");
-            _turnSystemRef.StopTurnSystem();
+            _gameController.EndGameViaVictory(_opponentController);
         }
             
     }
@@ -648,6 +647,13 @@ public class UnitController : MonoBehaviour, ITurnListener
     {
         _uiController.IncrementTurnCount();
         _uiController.IncrementDrawCounter();
+
+        if (_uiController.GetDrawCounter() >= _gameController.GetTurnsUntilDraw())
+        {
+            _gameController.EndGameViaDraw();
+            return;
+        }
+
         ChangeUIToReflectTurnStatus();
 
         FindAllPossibleJumps();
@@ -683,4 +689,18 @@ public class UnitController : MonoBehaviour, ITurnListener
             
     }    
 
+    public List<CheckersUnitAttributes> GetTeamUnits()
+    {
+        return _availableTeamUnits;
+    }
+
+    public List<(int,int)> GetAllUnitPositions()
+    {
+        List<(int, int)> positions = new List<(int, int)>();
+
+        foreach (CheckersUnitAttributes unit in _availableTeamUnits)
+            positions.Add(unit.GetComponent<GamePiece>().GetGridPosition());
+
+        return positions;
+    }
 }
