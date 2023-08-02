@@ -9,7 +9,7 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource _mousePositionMove;
     [SerializeField] private AudioSource _unitSelection;
     [SerializeField] private AudioSource _unitPositionMove;
-
+    [SerializeField] private AudioSource _gameOver;
  
 
 
@@ -46,7 +46,10 @@ public class AudioManager : MonoBehaviour
         _unitPositionMove.Play();
     }
 
-
+    public void PlayGameOver()
+    {
+        _gameOver.Play();
+    }
 
 
 }

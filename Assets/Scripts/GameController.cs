@@ -17,6 +17,7 @@ public class GameController : MonoBehaviour
     [SerializeField] private GameObject _winningPiecesHighlightPrefab;
     [SerializeField] private GameObject _drawHighlightPrefab;
     [SerializeField] private int _turnsUntilDraw = 40;
+    [SerializeField] private AudioManager _audioManager;
 
 
     private void HighlightPieces( List<(int,int)> xyPositions, GameObject highlightPrefab)
@@ -66,6 +67,8 @@ public class GameController : MonoBehaviour
         _uiController.ShowGameOverUI();
         _uiController.HideDarkTurnUI();
         _uiController.HideLightTurnUI();
+
+        _audioManager.PlayGameOver();
     }
 
     public void EndGameViaDraw()
@@ -77,6 +80,7 @@ public class GameController : MonoBehaviour
         _uiController.HideDarkTurnUI();
         _uiController.HideLightTurnUI();
 
+        _audioManager.PlayGameOver();
     }
 
     public int GetTurnsUntilDraw()
