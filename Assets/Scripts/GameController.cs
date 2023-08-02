@@ -18,6 +18,7 @@ public class GameController : MonoBehaviour
     [SerializeField] private GameObject _drawHighlightPrefab;
     [SerializeField] private int _turnsUntilDraw = 40;
 
+
     private void HighlightPieces( List<(int,int)> xyPositions, GameObject highlightPrefab)
     {
         foreach ((int,int) xyPosition in xyPositions)
@@ -49,6 +50,7 @@ public class GameController : MonoBehaviour
         _startButton.SetActive(false);
         _restartButton.SetActive(true);
         _turnSystem.StartTurnSystem();
+        _uiController.ReinitializeDrawCounter();
     }
 
     public void RestartGame()
@@ -61,7 +63,7 @@ public class GameController : MonoBehaviour
         _turnSystem.StopTurnSystem();
         HighlightPieces(winningTeamController.GetAllUnitPositions(), _winningPiecesHighlightPrefab);
 
-        //Show Win UI
+        _uiController.ShowGameOverUI();
         _uiController.HideDarkTurnUI();
         _uiController.HideLightTurnUI();
     }
@@ -71,7 +73,7 @@ public class GameController : MonoBehaviour
         _turnSystem.StopTurnSystem();
         HighlightPieces(BuildAllPositionsList(), _drawHighlightPrefab);
 
-        //Show Draw UI
+        _uiController.ShowDrawGameOverUI();
         _uiController.HideDarkTurnUI();
         _uiController.HideLightTurnUI();
 

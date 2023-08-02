@@ -47,6 +47,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     [SerializeField] private GameBoard _gameBoardRef;
     [SerializeField] private MouseToWorld2D _mouseTracker2D;
     [SerializeField] private UnitController _opponentController;
+    [SerializeField] private AudioManager _audioManager;
 
     [Header("Debugging Utils")]
     [SerializeField] private bool _isDebugActive = false;
@@ -86,6 +87,11 @@ public class UnitController : MonoBehaviour, ITurnListener
         {
             STKDebugLogger.LogStatement(_isDebugActive,$"Game Over. No moves detected.");
             _gameController.EndGameViaVictory(_opponentController);
+
+            if (_team == Team.Dark)
+                _uiController.ShowP2Victory();
+            else
+                _uiController.ShowP1Victory();
         }
             
     }
@@ -183,6 +189,7 @@ public class UnitController : MonoBehaviour, ITurnListener
 
                         //Move piece to new location
                         _selectedCheckersUnit.GetComponent<GamePiece>().SetGridPosition(selectedPosition);
+                        _audioManager.PlayUnitPositionMove();
 
                         //Remove The Jumped Piece
                         _jumpEnd = selectedPosition;
@@ -236,6 +243,7 @@ public class UnitController : MonoBehaviour, ITurnListener
 
                         //Move piece to new location
                         _selectedCheckersUnit.GetComponent<GamePiece>().SetGridPosition(selectedPosition);
+                        _audioManager.PlayUnitPositionMove();
 
                         if (IsSelectedUnitInKingsRow() && _selectedCheckersUnit.IsKing() == false)
                         {
@@ -296,6 +304,7 @@ public class UnitController : MonoBehaviour, ITurnListener
     private void CommitSelection(GamePiece piece)
     {
         _selectedCheckersUnit = piece.GetComponent<CheckersUnitAttributes>();
+        _audioManager.PlayUnitSelection();
 
         //Show selection's possible moves
         HighlightPossibleMoves();
@@ -646,9 +655,9 @@ public class UnitController : MonoBehaviour, ITurnListener
     public void RespondToNotification(int turnNumber)
     {
         _uiController.IncrementTurnCount();
-        _uiController.IncrementDrawCounter();
+        _uiController.DecrementDrawCounter();
 
-        if (_uiController.GetDrawCounter() >= _gameController.GetTurnsUntilDraw())
+        if (_uiController.GetDrawCounter() == 0)
         {
             _gameController.EndGameViaDraw();
             return;

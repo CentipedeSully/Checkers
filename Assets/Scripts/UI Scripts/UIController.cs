@@ -16,6 +16,11 @@ public class UIController : MonoBehaviour
     [SerializeField] private GameObject _drawCounterUI;
     [SerializeField] private TextMeshProUGUI _turnCountTxt;
     [SerializeField] private TextMeshProUGUI _drawCountTxt;
+    [SerializeField] private GameController _gameController;
+    [SerializeField] private GameObject _drawStateUI;
+    [SerializeField] private GameObject _gameOverUI;
+    [SerializeField] private GameObject _VictoryP1UI;
+    [SerializeField] private GameObject _VictoryP2UI;
 
     private int _drawCounter = -1;
     private int _turnCounter = -1;
@@ -52,9 +57,9 @@ public class UIController : MonoBehaviour
         _turnCountTxt.text = _turnCounter.ToString();
     }
 
-    public void IncrementDrawCounter()
+    public void DecrementDrawCounter()
     {
-        _drawCounter++;
+        _drawCounter--;
         _drawCountTxt.text = _drawCounter.ToString();
     }
 
@@ -65,7 +70,12 @@ public class UIController : MonoBehaviour
 
     public void ResetDrawCounter()
     {
-        _drawCounter = -1;
+        ReinitializeDrawCounter();
+    }
+
+    public void ReinitializeDrawCounter()
+    {
+        _drawCounter = _gameController.GetTurnsUntilDraw() + 1;
     }
 
     public void ShowDarkTurnUI()
@@ -118,6 +128,46 @@ public class UIController : MonoBehaviour
     public void ShowDrawCounterUI()
     {
         _drawCounterUI.SetActive(true);
+    }
+
+    public void ShowDrawGameOverUI()
+    {
+        _drawStateUI.SetActive(true);
+    }
+
+    public void HideDrawGameOverUI()
+    {
+        _drawStateUI.SetActive(false);
+    }
+
+    public void ShowGameOverUI()
+    {
+        _gameOverUI.SetActive(true);
+    }
+
+    public void HideGameOverUI()
+    {
+        _gameOverUI.SetActive(false);
+    }
+
+    public void ShowP1Victory()
+    {
+        _VictoryP1UI.SetActive(true);
+    }
+
+    public void HideP1Victory()
+    {
+        _VictoryP1UI.SetActive(false);
+    }
+
+    public void ShowP2Victory()
+    {
+        _VictoryP2UI.SetActive(true);
+    }
+
+    public void HideP2Victory()
+    {
+        _VictoryP2UI.SetActive(false);
     }
 
 }
